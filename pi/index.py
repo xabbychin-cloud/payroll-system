@@ -6,12 +6,13 @@ from reportlab.pdfgen import canvas
 from io import BytesIO
 
 # Initialize Firebase
-cred = credentials.Certificate(os.environ.get('FIREBASE_KEY_PATH', 'firebase-key.json'))  # Fallback for local testing
+# For Vercel, ensure FIREBASE_KEY_PATH is set as env var with full JSON
+cred = credentials.Certificate(os.environ.get('FIREBASE_KEY_PATH', 'firebase-key.json'))  # Fallback for local
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'fallback-secret')  # Use env var for production
+app.secret_key = os.environ.get('SECRET_KEY', 'fallback-secret')  # Use env var
 
 # Auth Routes
 @app.route('/register', methods=['GET', 'POST'])
@@ -146,10 +147,10 @@ def list_employees():
             data = emp.to_dict()
             if (not branch or data.get('branch') == branch) and (not date or data.get('date') == date) and (not search or search.lower() in data['name'].lower()):
                 emp_list.append(data)
-        return render_template('list.html', employees=emp_list)
-        return render_template('index.html', employees=emp_list)  # Instead of 'list.html'
+        # Fixed: Only one return, using index.html to show results on home page
+        return render_template('index.html', employees=emp_list)
     except Exception as e:
         flash(f'Error loading employees: {str(e)}', 'error')
-        return render_template('list.html', employees=[])
+        return render_template('index.html', employees=[])
 
 app = app
