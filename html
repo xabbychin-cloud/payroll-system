@@ -9,3 +9,58 @@
     <a href="/report">Generate Report</a>
 </body>
 </html>
+
+<!DOCTYPE html>
+<html>
+<head><title>Add Employee</title></head>
+<body>
+    <h1>Add Employee</h1>
+    <form method="POST">
+        Name: <input type="text" name="name" required><br>
+        Hourly Rate: <input type="number" step="0.01" name="rate" required><br>
+        Hours Worked: <input type="number" step="0.01" name="hours" required><br>
+        Deductions: <input type="number" step="0.01" name="deductions" required><br>
+        <input type="submit" value="Add">
+    </form>
+    <a href="/">Back</a>
+</body>
+</html>
+
+<!DOCTYPE html>
+<html>
+<head><title>Remove Employee</title></head>
+<body>
+    <h1>Remove Employee</h1>
+    <form method="POST">
+        Name: <input type="text" name="name" required><br>
+        <input type="submit" value="Remove">
+    </form>
+    <a href="/">Back</a>
+</body>
+</html>
+
+<!DOCTYPE html>
+<html>
+<head><title>Employee List</title></head>
+<body>
+    <h1>Employees</h1>
+    {% for emp in employees %}
+        <p>{{ emp.name }}: Rate ${{ emp.rate }}, Hours {{ emp.hours }}, Deductions ${{ emp.deductions }}</p>
+    {% endfor %}
+    <a href="/">Back</a>
+</body>
+</html>
+
+<!DOCTYPE html>
+<html>
+<head><title>Payroll Report</title></head>
+<body>
+    <h1>Payroll Report</h1>
+    {% for item in report %}
+        <p>{{ item.name }}: Gross ${{ "%.2f"|format(item.gross) }}, Taxes ${{ "%.2f"|format(item.taxes) }}, Deductions ${{ "%.2f"|format(item.deductions) }}, Net ${{ "%.2f"|format(item.net) }}</p>
+    {% endfor %}
+    <p>Total Gross: ${{ "%.2f"|format(total_gross) }}, Total Net: ${{ "%.2f"|format(total_net) }}</p>
+    <a href="/">Back</a>
+</body>
+</html>
+
