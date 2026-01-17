@@ -40,7 +40,7 @@ def login():
             return redirect(url_for('index'))
         except Exception as e:
             flash(f'Login failed: {str(e)}', 'error')
-    return render_template('login.html')
+    return render_template('index.html
 
 @app.route('/logout')
 def logout():
