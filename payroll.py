@@ -1,75 +1,155 @@
+from flask import Flask, render_template, request, redirect, url_for, send_file, session
 import firebase_admin
-from firebase_admin import credentials, firestore
+from firebase_admin import credentials, firestore, auth
 import os
+from reportlab.pdfgen import canvas
+from io import BytesIO
 
-# Initialize Firebase (replace with your key path)
-cred = credentials.Certificate('firebase-key.json')  # Or use env var for security
+# Initialize Firebase
+cred = credentials.Certificate(os.environ['FIREBASE_KEY_PATH'])
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
-def add_employee(name, rate, hours, deductions):
-    doc_ref = db.collection('employees').document(name)
-    doc_ref.set({
-        'name': name,
-        'rate': rate,
-        'hours': hours,
-        'deductions': deductions
-    })
-    print(f"Added {name} to Firebase.")
+app = Flask(__name__)
+app.secret_key = 'your-secret-key'  # For session management
 
-def remove_employee(name):
-    db.collection('employees').document(name).delete()
-    print(f"Removed {name} from Firebase.")
+# Auth Routes (Basic Firebase Auth integration)
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        try:
+            user = auth.create_user(email=email, password=password)
+            return redirect(url_for('login'))
+        except Exception as e:
+            return f"Error: {e}"
+    return render_template('register.html')
 
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        try:
+            user = auth.get_user_by_email(email)
+            session['user'] = user.uid
+            return redirect(url_for('index'))
+        except Exception as e:
+            return f"Error: {e}"
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('user', None)
+    return redirect(url_for('index'))
+
+# PDF Generation Route
+@app.route('/pdf/<name>')
+def generate_pdf(name):
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    emp_ref = db.collection('employees').document(name)
+    emp = emp_ref.get()
+    if emp.exists:
+        data = emp.to_dict()
+        buffer = BytesIO()
+        p = canvas.Canvas(buffer)
+        p.drawString(100, 750, f"Employee: {data['name']}")
+        p.drawString(100, 730, f"Rate: ${data['rate']}")
+        p.drawString(100, 710, f"Hours: {data['hours']}")
+        p.drawString(100, 690, f"Deductions: ${data['deductions']}")
+        # Add calculations here
+        p.showPage()
+        p.save()
+        buffer.seek(0)
+        return send_file(buffer, as_attachment=True, download_name=f"{name}.pdf", mimetype='application/pdf')
+    return "Employee not found"
+
+# Updated Employee Routes with Filters
+@app.route('/')
+def index():
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    return render_template('index.html')
+
+@app.route('/add', methods=['GET', 'POST'])
+def add_employee():
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    if request.method == 'POST':
+        name = request.form['name']
+        rate = float(request.form['rate'])
+        hours = float(request.form['hours'])
+        deductions = float(request.form['deductions'])
+        branch = request.form['branch']
+        date = request.form['date']
+        doc_ref = db.collection('employees').document(name)
+        doc_ref.set({
+            'name': name,
+            'rate': rate,
+            'hours': hours,
+            'deductions': deductions,
+            'branch': branch,
+            'date': date
+        })
+        return redirect(url_for('index'))
+    return render_template('add.html')
+
+@app.route('/remove', methods=['GET', 'POST'])
+def remove_employee():
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    if request.method == 'POST':
+        name = request.form['name']
+        db.collection('employees').document(name).delete()
+        return redirect(url_for('index'))
+    return render_template('remove.html')
+
+@app.route('/list')
 def list_employees():
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    branch = request.args.get('branch')
+    date = request.args.get('date')
+    search = request.args.get('search')
     employees = db.collection('employees').stream()
-    for emp in employees:
-        print(emp.to_dict())
-
-def calculate_pay(employee):
-    rate = employee['rate']
-    hours = employee['hours']
-    deductions = employee['deductions']
-    overtime_hours = max(0, hours - 40)
-    gross = (40 * rate) + (overtime_hours * rate * 1.5)
-    taxes = gross * 0.25  # Customizable
-    net = gross - taxes - deductions
-    return gross, taxes, net
-
-def generate_report():
-    employees = db.collection('employees').stream()
-    total_gross = 0
-    total_net = 0
-    print("\n--- Payroll Report ---")
+    emp_list = []
     for emp in employees:
         data = emp.to_dict()
-        gross, taxes, net = calculate_pay(data)
-        total_gross += gross
-        total_net += net
-        print(f"{data['name']}: Gross ${gross:.2f}, Taxes ${taxes:.2f}, Deductions ${data['deductions']:.2f}, Net ${net:.2f}")
-    print(f"Total Gross: ${total_gross:.2f}, Total Net: ${total_net:.2f}\n")
+        if (not branch or data.get('branch') == branch) and (not date or data.get('date') == date) and (not search or search.lower() in data['name'].lower()):
+            emp_list.append(data)
+    return render_template('list.html', employees=emp_list)
 
-def main():
-    while True:
-        print("1. Add Employee\n2. Remove Employee\n3. List Employees\n4. Generate Report\n5. Exit")
-        choice = input("Choose: ")
-        if choice == '1':
-            name = input("Name: ")
-            rate = float(input("Hourly Rate: "))
-            hours = float(input("Hours Worked: "))
-            deductions = float(input("Deductions: "))
-            add_employee(name, rate, hours, deductions)
-        elif choice == '2':
-            name = input("Name to remove: ")
-            remove_employee(name)
-        elif choice == '3':
-            list_employees()
-        elif choice == '4':
-            generate_report()
-        elif choice == '5':
-            break
-        else:
-            print("Invalid choice.")
+@app.route('/report')
+def generate_report():
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    branch = request.args.get('branch')
+    date = request.args.get('date')
+    employees = db.collection('employees').stream()
+    report_data = []
+    total_gross = 0
+    total_net = 0
+    for emp in employees:
+        data = emp.to_dict()
+        if (not branch or data.get('branch') == branch) and (not date or data.get('date') == date):
+            rate = data['rate']
+            hours = data['hours']
+            deductions = data['deductions']
+            overtime_hours = max(0, hours - 40)
+            gross = (40 * rate) + (overtime_hours * rate * 1.5)
+            taxes = gross * 0.25
+            net = gross - taxes - deductions
+            total_gross += gross
+            total_net += net
+            report_data.append({
+                'name': data['name'],
+                'gross': gross,
+                'taxes': taxes,
+                'deductions': deductions,
+                'net': net
+            })
+    return render_template('report.html', report=report_data, total_gross=total_gross, total_net=total_net)
 
-if __name__ == "__main__":
-    main()
+app = app
