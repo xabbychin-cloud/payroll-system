@@ -147,6 +147,7 @@ def list_employees():
             if (not branch or data.get('branch') == branch) and (not date or data.get('date') == date) and (not search or search.lower() in data['name'].lower()):
                 emp_list.append(data)
         return render_template('list.html', employees=emp_list)
+        return render_template('index.html', employees=emp_list)  # Instead of 'list.html'
     except Exception as e:
         flash(f'Error loading employees: {str(e)}', 'error')
         return render_template('list.html', employees=[])
