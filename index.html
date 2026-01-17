@@ -7,6 +7,8 @@
         .toolbar { background-color: #333; color: white; padding: 10px; position: fixed; top: 0; width: 100%; z-index: 1; }
         .toolbar a { color: white; margin: 0 15px; text-decoration: none; }
         .content { margin-top: 60px; padding: 20px; }
+        .sub-toolbar { background-color: #f0f0f0; padding: 10px; margin-bottom: 20px; }
+        .sub-toolbar a { margin: 0 10px; text-decoration: none; background-color: #4CAF50; color: white; padding: 10px; border-radius: 5px; }
         button { background-color: #4CAF50; color: white; padding: 10px; border: none; cursor: pointer; }
     </style>
 </head>
@@ -14,15 +16,18 @@
     <div class="toolbar">
         <h2>Payroll System</h2>
         <a href="/">Home</a>
-        <a href="/list">Employees</a>
-        <a href="/report">Reports</a>
         <a href="/register">Create Account</a>
         <a href="/login">Login</a>
         <a href="/logout">Logout</a>
     </div>
     <div class="content">
         <h1>Payroll Management</h1>
-        <p>Welcome! Use the toolbar to navigate. Click "Employees" to view and manage staff.</p>
+        <div class="sub-toolbar">
+            <a href="/add">Add Employee</a>
+            <a href="/remove">Remove Employee</a>
+            <a href="/list">Search Employees</a>
+        </div>
+        <p>Welcome! Use the sub-toolbar below to manage employees. Reports are integrated in the employee search.</p>
     </div>
 </body>
 </html>
@@ -57,8 +62,6 @@
     <div class="toolbar">
         <h2>Payroll System</h2>
         <a href="/">Home</a>
-        <a href="/list">Employees</a>
-        <a href="/report">Reports</a>
     </div>
     <div class="content">
         <h1>Add Employee</h1>
@@ -76,6 +79,7 @@
     </div>
 </body>
 </html>
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -92,8 +96,6 @@
     <div class="toolbar">
         <h2>Payroll System</h2>
         <a href="/">Home</a>
-        <a href="/list">Employees</a>
-        <a href="/report">Reports</a>
     </div>
     <div class="content">
         <h1>Remove Employee</h1>
@@ -105,10 +107,11 @@
     </div>
 </body>
 </html>
+
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Employee List</title>
+    <title>Search Employees</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
         .toolbar { background-color: #333; color: white; padding: 10px; position: fixed; top: 0; width: 100%; z-index: 1; }
@@ -121,11 +124,9 @@
     <div class="toolbar">
         <h2>Payroll System</h2>
         <a href="/">Home</a>
-        <a href="/list">Employees</a>
-        <a href="/report">Reports</a>
     </div>
     <div class="content">
-        <h1>Employees</h1>
+        <h1>Search Employees</h1>
         <form method="GET">
             Search: <input type="text" name="search">
             Branch: <select name="branch"><option value="">All</option><option>HR</option><option>IT</option><option>Sales</option></select>
@@ -140,37 +141,5 @@
     </div>
 </body>
 </html>
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Payroll Report</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-        .toolbar { background-color: #333; color: white; padding: 10px; position: fixed; top: 0; width: 100%; z-index: 1; }
-        .toolbar a { color: white; margin: 0 15px; text-decoration: none; }
-        .content { margin-top: 60px; padding: 20px; }
-        button { background-color: #FF9800; color: white; padding: 5px; border: none; cursor: pointer; margin: 5px; }
-    </style>
-</head>
-<body>
-    <div class="toolbar">
-        <h2>Payroll System</h2>
-        <a href="/">Home</a>
-        <a href="/list">Employees</a>
-        <a href="/report">Reports</a>
-    </div>
-    <div class="content">
-        <h1>Payroll Report</h1>
-        <form method="GET">
-            Branch: <select name="branch"><option value="">All</option><option>HR</option><option>IT</option><option>Sales</option></select>
-            Date: <input type="date" name="date">
-            <button type="submit">Filter</button>
-        </form>
-        {% for item in report %}
-            <p>{{ item.name }}: Gross ${{ "%.2f"|format(item.gross) }}, Taxes ${{ "%.2f"|format(item.taxes) }}, Deductions ${{ "%.2f"|format(item.deductions) }}, Net ${{ "%.2f"|format(item.net) }}</p>
-        {% endfor %}
-        <p>Total Gross: ${{ "%.2f"|format(total_gross) }}, Total Net: ${{ "%.2f"|format(total_net) }}</p>
-        <a href="/">Back</a>
-    </div>
-</body>
-</html>
+
+
