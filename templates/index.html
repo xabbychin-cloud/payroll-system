@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Payroll System</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+        .toolbar { background-color: #333; color: white; padding: 10px; position: fixed; top: 0; width: 100%; z-index: 1; }
+        .toolbar a { color: white; margin: 0 15px; text-decoration: none; cursor: pointer; }
+        .toolbar a:hover { background-color: #555; padding: 5px; }
+        .content { margin-top: 60px; padding: 20px; }
+        .form-section { display: none; margin-top: 20px; padding: 20px; border: 1px solid #ccc; background-color: #f9f9f9; }
+        button { background-color: #4CAF50; color: white; padding: 10px; border: none; cursor: pointer; }
+        .flash { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+    </style>
+    <script>
+        function showSection(sectionId) {
+            // Hide all sections
+            const sections = document.querySelectorAll('.form-section');
+            sections.forEach(section => section.style.display = 'none');
+            // Show the clicked section
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.style.display = 'block';
+            }
+        }
+        function autocompute() {
+            const rate = parseFloat(document.getElementById('rate').value) || 0;
+            const hours = parseFloat(document.getElementById('hours').value) || 0;
+            const deductions = parseFloat(document.getElementById('deductions').value) || 0;
+            const overtime = Math.max(0, hours - 40);
+            const gross = (40 * rate) + (overtime * rate * 1.5);
+            const taxes = gross * 0.25;
+            const net = gross - taxes - deductions;
+            document.getElementById('gross').innerText = gross.toFixed(2);
+            document.getElementById('taxes').innerText = taxes.toFixed(2);
+            document.getElementById('net').innerText = net.toFixed(2);
+        }
+    </script>
+</head>
+<body>
+    <div class="toolbar">
+        <h2>Payroll System</h2>
+        <a onclick="showSection('add')">Add Employee</a>
+        <a onclick="showSection('remove')">Remove Employee</a>
+        <a onclick="showSection('search')">Search Employees</a>
+        <a href="/register">Create Account</a>
+        <a href="/login">Login</a>
+        <a href="/logout">Logout</a>
+    </div>
+    <div class="content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <h1>Payroll Management</h1>
+        
+        <!-- Add Employee Section -->
+        <div id="add" class="form-section">
+            <h2>Add Employee</h2>
+            <form method="POST" action="/add" oninput="autocompute()">
+                Name: <input type="text" name="name" required><br>
+                Hourly Rate: <input type="number" step="0.01" name="rate" id="rate" required><br>
+                Hours Worked: <input type="number" step="0.01" name="hours" id="hours" required><br>
+                Deductions: <input type="number" step="0.01" name="deductions" id="deductions" required><br>
+                Branch: <select name="branch"><option>HR</option><option>IT</option><option>Sales</option></select><br>
+                Date: <input type="date" name="date" required><br>
+                <p>Gross: $<span id="gross">0.00</span> | Taxes: $<span id="taxes">0.00</span> | Net: $<span id="net">0.00</span></p>
+                <button type="submit">Add Employee</button>
+            </form>
+        </div>
+        
+        <!-- Remove Employee Section -->
+        <div id="remove" class="form-section">
+            <h2>Remove Employee</h2>
+            <form method="POST" action="/remove">
+                Name: <input type="text" name="name" required><br>
+                <button type="submit">Remove Employee</button>
+            </form>
+        </div>
+        
+        <!-- Search Employees Section -->
+        <div id="search" class="form-section">
+            <h2>Search Employees</h2>
+            <form method="GET" action="/list">
+                Search: <input type="text" name="search">
+                Branch: <select name="branch"><option value="">All</option><option>HR</option><option>IT</option><option>Sales</option></select>
+                Date: <input type="date" name="date">
+                <button type="submit">Populate</button>
+            </form>
+            {% if employees %}
+                {% for emp in employees %}
+                    <p>{{ emp.name }}: Rate ${{ emp.rate }}, Hours {{ emp.hours }}, Deductions ${{ emp.deductions }}, Branch {{ emp.branch }}, Date {{ emp.date }}
+                    <a href="/pdf/{{ emp.name }}"><button>Download PDF</button></a></p>
+                {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
+
